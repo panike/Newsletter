@@ -1,0 +1,15 @@
+\newdimen\defaulthsize \defaulthsize\hsize
+\newtoks\desctoks
+\newcount\descht \newcount\descwd
+\def\beginarticle#1#2{%
+\begingroup\desctoks={#2}
+\setbox0=\vbox\bgroup
+\hsize=#1 \desctoks={#2}
+}
+\def\endarticle{%
+\egroup \descht=\ht0 \advance\descht by\dp0 
+\descwd=\wd0 \shipout\vbox{%
+\special{newsdesc \the\desctoks}
+\box0
+\special{newsdescbounds \the\desctoks: \the\descht, \the\descwd}}
+\endgroup}

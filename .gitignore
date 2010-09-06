@@ -1,0 +1,17 @@
+newsletter
+*.c
+*.idx
+*.log
+*.o
+*.pdf
+*.scn
+*.toc
+*.swp
+*.dvi
+*.txt
+*.ps
+*~
+*.1
+*.mpx
+tags
+
