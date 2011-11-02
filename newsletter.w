@@ -50,7 +50,7 @@ assumptions about how text should go.
     struct box_list* boxn,*boxm;
     char*config_line;
     unsigned char*p;
-    int text_width,text_x,text_y,quit_y,len;	
+    int text_width,quit_y,len;	
     XEvent xevent;
 
     @<Initialize the program@>@;
@@ -247,6 +247,7 @@ void destroy_box_list(struct box_list*bx)
 }
 @ @<Global variable declarations@>=
 struct box_list* the_boxes;
+int text_x,text_y;
 int num_dvi_lines;
 @ @<Clean up...@>=
 for(boxn=the_boxes;boxn;boxn=boxm){
@@ -261,11 +262,24 @@ the output name.
 @d DEFAULT_PAGE_WD 476
 @<Parse the command line@>=
 configfilename=input_txt_name=output_txt_name=(char*)0;
-page_wd = DEFAULT_PAGE_WD;
-page_ht = DEFAULT_PAGE_HT;
+scale = 1;
+page_wd = DEFAULT_PAGE_WD/scale;
+page_ht = DEFAULT_PAGE_HT/scale;
 for(ii=1;ii<argc;++ii){
     @<Handle each command-line flag@>@; 
 }
+@ If you are using a scale, you should assign |page_ht| and |page_wd|.
+@<Handle each command-line flag@>=
+    if(strcmp("-s",argv[ii])==0){
+		if(ii != 1){
+			fprintf(stderr,"A -s argument needs to come first\n");	
+			do
+				@<Print a helpful message@>@;
+			while(0);
+		}
+        ++ii;
+        scale=atoi(argv[ii]); 
+    }
 @ @<Handle each command-line flag@>=
     if(strcmp("-c",argv[ii])==0){
         ++ii;
@@ -291,12 +305,12 @@ A4 letter size.
 @<Handle each command-line flag@>=
     if(strcmp("-h",argv[ii])==0){
         ++ii;
-        page_ht = atoi(argv[ii]); 
+        page_ht = atoi(argv[ii])/scale; 
     }
 @ @<Handle each command-line flag@>=
     if(strcmp("-w",argv[ii])==0){
         ++ii;
-        page_wd = atoi(argv[ii])+6;            
+        page_wd = atoi(argv[ii])/scale+6;            
     }
 @ @<Parse the command line@>=
 if(configfilename == (char*)0 ||
@@ -305,6 +319,7 @@ if(configfilename == (char*)0 ||
     @<Print a helpful message@>@;
 @ @<Global vari...@>=
 int page_wd,page_ht;
+int scale;
 @ @<Parse the command line@>=
 out_dvi_txt_file=fopen(output_txt_name,"w");
 if(out_dvi_txt_file == (FILE*)0){
@@ -521,8 +536,8 @@ if((name=string_contains(name,": ")) == (char*)0){
 if(boxn != (struct box_list*)0){
     boxn->bheight = get_integer(&name);
     boxn->bwidth = get_integer(&name);
-    boxn->pix_width=(boxn->bwidth+65535)/65536;
-    boxn->pix_ht=(boxn->bheight+65535)/65536;
+    boxn->pix_width=(boxn->bwidth+65535)/(65536*scale);
+    boxn->pix_ht=(boxn->bheight+65535)/(65536*scale);
     boxn->pixmap=XCreatePixmap(display,window,boxn->pix_width,
             boxn->pix_ht,1);
     @<Draw character boxes in our new pixmap@>@;
@@ -621,8 +636,8 @@ for(boxn=the_boxes;boxn;boxn=boxn->next)
     if(strcmp(boxn->name,name)==0){
         boxn->x=get_integer(&config_line);
         boxn->y=get_integer(&config_line); 
-        boxn->pix_x=(boxn->x+65535)/65536;
-        boxn->pix_y=(boxn->y+65535)/65536;
+        boxn->pix_x=(boxn->x+65535)/(65536*scale);
+        boxn->pix_y=(boxn->y+65535)/(65536*scale);
         break;
     }
 @ @<Open the conf...@>=
@@ -884,8 +899,8 @@ finished_x:
 @ @<Fix the units in the boxes@>=
 for(boxn=the_boxes;boxn;boxn=boxn->next)
     if(boxn->moved){
-       boxn->x=boxn->pix_x*65536;
-       boxn->y=boxn->pix_y*65536;  
+       boxn->x=boxn->pix_x*65536*scale;
+       boxn->y=boxn->pix_y*65536*scale;  
     }
 @ @<If there is a current box, let it go@>=
 if(active_box && active_state==1)
@@ -943,7 +958,6 @@ void redraw_window(void);
 void redraw_window(void)
 {
     struct box_list*boxn;
-    int text_x,text_y;
     xgcvalues.clip_mask=None;
     xgcvalues.foreground=WhitePixel(display,screen_num); 
     XChangeGC(display,our_gc,GCForeground|GCClipMask,&xgcvalues);
@@ -1559,8 +1573,8 @@ void draw_character(unsigned int ch,Pixmap bp, GC gc,
 @ @<Global func...@>=
 void convert_to_x(int dx,int dy,int*xx,int*xy)
 {
-    *xx=(dx+65535)/65536;
-    *xy=(dy+65535)/65536;
+    *xx=(dx+65535)/(65536*scale);
+    *xy=(dy+65535)/(65536*scale);
 }
 @ @c
 void draw_character(unsigned int ch,Pixmap bp, GC gc, struct defined_font* cf)
